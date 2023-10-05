@@ -1,5 +1,29 @@
 # Releases
 
+## Bitergia Analytics 0.17.0 - (2023-10-05)
+
+**New features:**
+
+ * Another change\
+   Added feature
+
+
+
+The following list describes the changes by component:
+
+### bitergia-analytics-opensearch
+  
+  * Update version
+
+### bitergia-analytics-opensearch-dashboards
+  
+  * Update version
+
+### bitergia-analytics-plugin
+  
+  * Update version
+
+
 ## Bitergia Analytics 0.16.3 - (2023-10-05)
 ## Bitergia Analytics 0.16.3 - (2023-10-05)
 
