@@ -1,5 +1,36 @@
 # Releases
 
+## Bitergia Analytics 0.16.2 - (2023-10-05)
+
+**New components:**
+
+
+The following list describes the changes by component:
+
+### bitergia-analytics-opensearch
+  
+  * Update version
+
+### bitergia-analytics-opensearch-dashboards
+
+**Bug fixes:**
+
+ * Fix\
+   Fixed bug
+
+### bitergia-analytics-plugin
+  
+  * Update version
+
+
+## Bitergia Analytics 0.16.2 - (2023-10-05)
+
+**Bug fixes:**
+
+ * Test patch release notes\
+   Patch text
+
+
 ## Bitergia Analytics 0.16.0 - (2023-10-05)
 
 **New components:**
