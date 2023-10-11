@@ -34,19 +34,27 @@ jobs:
           echo "release_candidate=${{ inputs.release_candidate}}" >> $GITHUB_OUTPUT
 
   setup:
-    name: Get version from repository
+    name: Get version from each repository
     runs-on: ubuntu-latest
+    needs:
+      - variables-job
     strategy:
       matrix:
         repository: [
+          bitergia-analytics,
           bitergia-analytics-opensearch,
           bitergia-analytics-opensearch-dashboards,
           bitergia-analytics-plugin
         ]
     outputs:
-      bitergia-analytics-opensearch: ${{ steps.semverup.outputs.bitergia-analytics-opensearch }}
-      bitergia-analytics-opensearch-dashboards: ${{ steps.semverup.outputs.bitergia-analytics-opensearch-dashboards }}
-      bitergia-analytics-plugin: ${{ steps.semverup.outputs.bitergia-analytics-plugin }}
+      bitergia_analytics_version: ${{ steps.semverup.outputs.bitergia-analytics }}
+      bitergia_analytics_forced_version: ${{ steps.semverup.outputs.bitergia-analytics_forced_version }}
+      opensearch_version: ${{ steps.semverup.outputs.bitergia-analytics-opensearch }}
+      opensearch_forced_version: ${{ steps.semverup.outputs.bitergia-analytics-opensearch_forced_version }}
+      dashboards_version: ${{ steps.semverup.outputs.bitergia-analytics-opensearch-dashboards }}
+      dashboards_forced_version: ${{ steps.semverup.outputs.bitergia-analytics-opensearch-dashboards_forced_version }}
+      plugin_version: ${{ steps.semverup.outputs.bitergia-analytics-plugin }}
+      plugin_forced_version: ${{ steps.semverup.outputs.bitergia-analytics-plugin_forced_version }}
     steps:
       - name: Checkout source code
         uses: actions/checkout@v4
@@ -77,548 +85,319 @@ jobs:
         continue-on-error: true
         shell: bash {0}
         run: |
+          old_version=${{ steps.old-version.outputs.version }}
           if [ ${{ inputs.release_candidate }} == 'true' ]
           then
             rcArg='--pre-release'
           else
             rcArg=''
           fi
-          old_version=${{ steps.old-version.outputs.version }}
 
           version=$(semverup --dry-run --current-version $old_version $rcArg)
           if [ -z $version ] && [ ${{ inputs.release_candidate }} != 'true' ] && [[ "$old_version" =~ .*rc.* ]]
           then
             echo "Create final version from rc"
             version=$(semverup --bump-version patch)
-            echo "forced_version=true" >> $GITHUB_OUTPUT
+            forced_version=true
           else
-            echo "forced_version=false" >> $GITHUB_OUTPUT
+            forced_version=false
           fi
+
           echo $version
-          echo "version=$version" >> $GITHUB_OUTPUT
-          echo "::set-output name=${{ matrix.repository }}::$version"
-          if [ -z $version ]; then exit 1; fi
+          echo "${{ matrix.repository }}=$version" >> $GITHUB_OUTPUT
+
+          if [ -z $version ] || [$forced_version == true]
+          then
+            echo "${{ matrix.repository }}_forced_version=true" >> $GITHUB_OUTPUT
+          else
+            echo "${{ matrix.repository }}_forced_version=false" >> $GITHUB_OUTPUT
+          fi
         working-directory: ${{ matrix.repository }}
    
   semverup:
-    name: Update version number
+    name: Choose highest version number
     runs-on: ubuntu-latest
     needs:
       - setup
     outputs:
-      new_version: ${{ steps.version.outputs.new_version }}
+      version: ${{ steps.version.outputs.new_version }}
     steps:
       - name: Choose version number
         id: version
         run: |
-          versions=(${{ needs.setup.outputs.bitergia-analytics-plugin }} ${{ needs.setup.outputs.bitergia-analytics-opensearch }} ${{ needs.setup.outputs.bitergia-analytics-opensearch-dashboards }})
+          versions=(
+            ${{ needs.setup.outputs.bitergia_analytics_version }}
+            ${{ needs.setup.outputs.plugin_version }}
+            ${{ needs.setup.outputs.opensearch_version }}
+            ${{ needs.setup.outputs.dashboards_version }}
+          )
           IFS=$'\n' new_version=($(sort -r -V <<<"${versions[*]}" | head -n1)); unset IFS
           echo "new_version=$new_version" >> $GITHUB_OUTPUT
           echo $new_version
 
-  bitergia-analytics-plugin:
-    name: Bitergia Analytics Plugin
-    needs:
-      - variables-job
-      - semverup
-    uses: ./.github/workflows/release-bap-component.yml
-    with:
-      version: ${{ needs.semverup.outputs.new_version }}
-      git_email: ${{ needs.variables-job.outputs.git_email }}
-      git_name: ${{ needs.variables-job.outputs.git_name }}
-      release_candidate: ${{ needs.variables-job.outputs.release_candidate }}
-      module_name: 'bitergia-analytics-plugin'
-      module_repository: 'evamillan/bitergia-analytics-plugin'
-      module_directory: 'bitergia-analytics-plugin'
-      forced_version: ${{ !needs.setup.output.bitergia-analytics-plugin }}
-    secrets:
-      access_token: ${{ secrets.ACCESS_TOKEN }}
-
-  bitergia-analytics-opensearch-dashboards:
-    name: Release Bitergia Analytics OpenSearch Dashboards
-    needs:
-      - variables-job
-      - semverup
-      - bitergia-analytics-plugin
-    uses: ./.github/workflows/release-bap-component.yml
-    with:
-      version: ${{ needs.semverup.outputs.new_version }}
-      git_email: ${{ needs.variables-job.outputs.git_email }}
-      git_name: ${{ needs.variables-job.outputs.git_name }}
-      release_candidate: ${{ needs.variables-job.outputs.release_candidate }}
-      module_name: 'bitergia-analytics-opensearch-dashboards'
-      module_repository: 'evamillan/bitergia-analytics-opensearch-dashboards'
-      module_directory: 'bitergia-analytics-opensearch-dashboards'
-      forced_version: ${{ !needs.setup.output.bitergia-analytics-opensearch-dashboards }}
-      plugin_url: ${{ needs.bitergia-analytics-plugin.outputs.plugin_url }}
-    secrets:
-      access_token: ${{ secrets.ACCESS_TOKEN }}
-    
-  bitergia-analytics-opensearch:
-    name: Release Bitergia Analytics OpenSearch
-    needs:
-      - variables-job
-      - semverup
-    uses: ./.github/workflows/release-bap-component.yml
-    with:
-      version: ${{ needs.semverup.outputs.new_version }}
-      git_email: ${{ needs.variables-job.outputs.git_email }}
-      git_name: ${{ needs.variables-job.outputs.git_name }}
-      release_candidate: ${{ needs.variables-job.outputs.release_candidate }}
-      module_name: 'bitergia-analytics-opensearch'
-      module_repository: 'evamillan/bitergia-analytics-opensearch'
-      module_directory: 'bitergia-analytics-opensearch'
-      forced_version: ${{ !needs.setup.output.bitergia-analytics-opensearch }}
-    secrets:
-      access_token: ${{ secrets.ACCESS_TOKEN }}
-    # steps:
-    #   - name: Checkout source code
-    #     uses: actions/checkout@v4
-    #     with:
-    #       repository: evamillan/bitergia-analytics-opensearch-dashboards
-    #       path: bitergia-analytics-opensearch-dashboards
-    #       token: '${{ secrets.ACCESS_TOKEN }}'
-    #       fetch-depth: 0
-    #       ref: release-workflow
-      
-    #   - name: Set up Git config
-    #     run: |
-    #       git config --global user.email "${{ inputs.git_email }}"
-    #       git config --global user.name "${{ inputs.git_name }}"
-
-    #   - name: Install release-tools
-    #     run: pip install git+https://github.com/evamillan/release-tools.git#egg=release-tools
-
-    #   - id: version
-    #     name: Update version
-    #     shell: bash
-    #     run: |
-    #       new_version=${{ steps.semverup.outputs.version }}
-    #       echo $new_version > version
-    #     working-directory: bitergia-analytics-opensearch-dashboards
-      
-    #   - name: Update plugin URL in Dockerfile
-    #     id: dockerfile
-    #     shell: bash
-    #     run: |
-    #       url='${{ needs.bitergia-analytics-plugin.outputs.plugin_url }}'
-    #       line="RUN opensearch-dashboards-plugin install $url"
-    #       sed -i "/bitergia-analytics-plugin/s|.*|$line|" Dockerfile
-    #     working-directory: bitergia-analytics-opensearch-dashboards
-      
-    #   - id: notes
-    #     name: Generate release notes
-    #     run: |
-    #       version=${{ needs.semverup.outputs.new_version }}
-    #       eof="EOF$(date +%s)"
-    #       release_file="releases/$version.md"
-    #       if [ ${{ inputs.release_candidate }} == 'true' ]
-    #       then
-    #         newsArg=''
-    #         rcArg='--pre-release'
-    #       else
-    #         newsArg='--news'
-    #         rcArg=''
-    #       fi
-          
-    #       notes "Bitergia Analytics OpenSearch Dashboards" $version $newsArg --authors $rcArg
-
-    #       # Save release notes in 'notes' output
-    #       echo 'notes<<$eof' >> $GITHUB_OUTPUT
-    #       cat $release_file >> $GITHUB_OUTPUT
-    #       echo '$eof' >> $GITHUB_OUTPUT
-    #     working-directory: bitergia-analytics-opensearch-dashboards
-      
-    #   - id: current_time
-    #     name: Store current time to get the release workflow
-    #     run: |
-    #       datetime=$(date +"%Y-%m-%dT%H:%M:%S%z")
-    #       echo "datetime=$datetime" >> $GITHUB_OUTPUT
-    #       echo $datetime
-
-    #   - id: publish
-    #     name: Publish new version.
-    #     run: |
-    #       if [ ${{ inputs.release_candidate }} == 'true' ]
-    #       then
-    #         publish ${{ needs.semverup.outputs.new_version }} "${{ inputs.git_name }} <${{ inputs.git_email }}>" --push origin --no-cleanup --add-all
-    #       else
-    #         publish ${{ needs.semverup.outputs.new_version }} "${{ inputs.git_name }} <${{ inputs.git_email }}>" --push origin --add-all --remote-branch="release-workflow"
-    #       fi
-    #     working-directory: bitergia-analytics-opensearch-dashboards
-      
-    #   - id: wait-for-release
-    #     name: Wait for release to finish.
-    #     continue-on-error: true
-    #     run: |
-    #       url="https://api.github.com/repos/evamillan/bitergia-analytics-opensearch-dashboards/actions/workflows/release.yml/runs?created=>${{ steps.current_time.outputs.datetime }}"
-    #       while true
-    #       do
-    #         workflows=$(curl -sS -H "Authorization: token ${{ secrets.ACCESS_TOKEN }}" $url)
-    #         if [ $(echo $workflows | jq '.total_count') -eq 0 ]
-    #         then
-    #           echo "Release workflow did not start"
-    #           sleep 60
-    #           continue
-    #         fi
-
-    #         release_conclusion=$(echo $workflows | jq '.workflow_runs[0].conclusion')
-    #         release_status=$(echo $workflows | jq '.workflow_runs[0].status')
-    #         if [ $release_status = \"completed\" -a $release_conclusion = \"success\" ]
-    #         then
-    #           echo "Release completed!";
-    #           break;
-    #         elif [ $release_status = \"completed\" -a $release_conclusion != \"success\" ]
-    #         then
-    #           echo "Release failed!";
-    #           exit 1;
-    #         else
-    #           echo $release_conclusion $release_status
-    #           echo "Waiting for release..."
-    #           sleep 60
-    #         fi
-    #       done
-      
-    #   - id: rollback
-    #     name: Rollback last commits and remove tag
-    #     if: steps.wait-for-release.outcome == 'failure'
-    #     run: |
-    #       git reset --hard HEAD~1
-    #       git push -f origin release-workflow
-    #       git tag -d ${{ needs.semverup.outputs.new_version }}
-    #       git push --delete origin ${{ needs.semverup.outputs.new_version }}
-
-    #       # Force to fail
-    #       exit 1
-    #     working-directory: bitergia-analytics-plugin
-
   # bitergia-analytics-plugin:
   #   name: Bitergia Analytics Plugin
-  #   runs-on: ubuntu-latest
   #   needs:
   #     - variables-job
-  #   outputs:
-  #     version: ${{ steps.semverup.outputs.new_tag }}
-  #     plugin_url: ${{ steps.assets.outputs.plugin_url }}
-  #   steps:
-  #     - name: Checkout plugin source code
-  #       uses: actions/checkout@v4
-  #       with:
-  #         repository: evamillan/test-gh-actions
-  #         path: test-gh-actions
-  #         token: '${{ secrets.ACCESS_TOKEN }}'
-  #         fetch-depth: 0
-  #         fetch-tags: true
+  #     - setup
+  #     - semverup
+  #   uses: ./.github/workflows/release-bap-component.yml
+  #   with:
+  #     version: ${{ needs.semverup.outputs.version }}
+  #     git_email: ${{ needs.variables-job.outputs.git_email }}
+  #     git_name: ${{ needs.variables-job.outputs.git_name }}
+  #     release_candidate: ${{ needs.variables-job.outputs.release_candidate }}
+  #     module_name: 'bitergia-analytics-plugin'
+  #     module_repository: 'bitergia-analytics/bitergia-analytics-plugin'
+  #     module_directory: 'bitergia-analytics-plugin'
+  #     forced_version: ${{ needs.setup.outputs.plugin_forced_version }}
+  #   secrets:
+  #     access_token: ${{ secrets.ACCESS_TOKEN }}
 
-  #     - name: Get new version number
-  #       id: semverup
-  #       uses: anothrNick/github-tag-action@1.36.0
-  #       continue-on-error: true
-  #       env:
-  #         GITHUB_TOKEN: ${{ secrets.ACCESS_TOKEN }}
-  #         DRY_RUN: true
-  #         SOURCE: test-gh-actions
-  #         INITIAL_VERSION: 0.4.0
-  #         DEFAULT_BRANCH: main
-  #         PRERELEASE: ${{ steps.variables.outputs.release_candidate }}
-  #         PRERELEASE_SUFFIX: rc
-      
-  #     - id: notes
-  #       name: Generate release notes.
-  #       if: steps.semverup.outcome == 'success'
-  #       run: |
-  #         version=${{ steps.semverup.outputs.version }}
-  #         eof="EOF$(date +%s)"
-  #         release_file="releases/$version.md"
-  #         if [ ${{ inputs.release_candidate }} == 'true' ]
-  #         then
-  #           newsArg=''
-  #           rcArg='--pre-release'
-  #         else
-  #           newsArg='--news'
-  #           rcArg=''
-  #         fi
-
-  #         if [ ${{ steps.semverup.outputs.forced_version }} != 'true' ]
-  #         then
-  #           notes "Bitergia Analytics OpenSearch Dashboards" $version $newsArg --authors $rcArg
-  #         else
-  #           today=$(date -u "+%Y-%m-%d")
-  #           cat << EOF > $release_file
-  #           ## Bitergia Analytics OpenSearch Dashboards $version - ($today)
-  #         EOF
-  #           # Update NEWS file if it is not a release candidate
-  #           if [ ${{ inputs.release_candidate }} != 'true' ]
-  #           then
-  #             mv NEWS old_NEWS
-  #             echo -e "# Releases\n" >> NEWS
-  #             cat $release_file >> NEWS
-  #             cat old_NEWS | tail -n +2 >> NEWS
-  #           fi
-  #         fi
-
-  #         # Save release notes in 'notes' output
-  #         echo 'notes<<$eof' >> $GITHUB_OUTPUT
-  #         cat $release_file >> $GITHUB_OUTPUT
-  #         echo '$eof' >> $GITHUB_OUTPUT
-  #       working-directory: bitergia-analytics-opensearch-dashboards
-
-      # - name: Update version in json files
-      #   if: steps.semverup.outcome == 'success'
-      #   shell: bash
-      #   run: |
-      #     package_contents="$(jq '.version = "${{ steps.semverup.outputs.new_tag }}"' package.json)" && \
-      #     echo -E "${package_contents}" > package.json
-      #     osd_contents="$(jq '.version = "${{ steps.semverup.outputs.new_tag }}"' opensearch_dashboards.json)" && \
-      #     echo -E "${osd_contents}" > opensearch_dashboards.json
-      #   working-directory: test-gh-actions
-
-      # - id: tag
-      #   name: Commit and tag
-      #   if: steps.semverup.outcome == 'success'
-      #   run: |
-      #     git config user.name ${{ inputs.git_name }}
-      #     git config user.email ${{ inputs.git_email }}
-      #     git add .
-      #     git commit -m "Release ${{ steps.semverup.outputs.new_tag }}"
-      #     git push
-      #     git tag ${{ steps.semverup.outputs.new_tag }}
-      #     git push origin ${{ steps.semverup.outputs.new_tag }}
-      #   working-directory: test-gh-actions
-      
-      # - id: current_time
-      #   name: Store current time to get the release workflow
-      #   if: steps.semverup.outcome == 'success'
-      #   run: |
-      #     datetime=$(date +"%Y-%m-%dT%H:%M:%S%z")
-      #     echo "datetime=$datetime" >> $GITHUB_OUTPUT
-      #     echo $datetime
-
-      # - id: wait-for-release
-      #   name: Wait for release to finish.
-      #   continue-on-error: true
-      #   if: steps.tag.outcome == 'success'
-      #   run: |
-      #     url="https://api.github.com/repos/evamillan/test-gh-actions/actions/workflows/release.yml/runs?created=>${{ steps.current_time.outputs.datetime }}"
-      #     while true
-      #     do
-      #       workflows=$(curl -sS -H "Authorization: token ${{ secrets.ACCESS_TOKEN }}" $url)
-      #       if [ $(echo $workflows | jq '.total_count') -eq 0 ]
-      #       then
-      #         echo "Release workflow did not start"
-      #         sleep 60
-      #         continue
-      #       fi
-
-      #       release_conclusion=$(echo $workflows | jq '.workflow_runs[0].conclusion')
-      #       release_status=$(echo $workflows | jq '.workflow_runs[0].status')
-      #       if [ $release_status = \"completed\" -a $release_conclusion = \"success\" ]
-      #       then
-      #         echo "Release completed!";
-      #         break;
-      #       elif [ $release_status = \"completed\" -a $release_conclusion != \"success\" ]
-      #       then
-      #         echo "Release failed!";
-      #         exit 1;
-      #       else
-      #         echo $release_conclusion $release_status
-      #         echo "Waiting for release..."
-      #         sleep 60
-      #       fi
-      #     done
-      
-  #     - id: assets
-  #       name: Get plugin installable URL
-  #       shell: bash
-  #       # if: steps.wait-for-release.outcome == 'success'
-  #       run: |
-  #         url="https://api.github.com/repos/evamillan/bitergia-analytics-plugin/releases/tags/${{ steps.semverup.outputs.new_tag }}"
-  #         assets=$(curl -sS -H "Authorization: token ${{ secrets.ACCESS_TOKEN }}" $url)
-  #         plugin_url=$(echo $assets | jq '.assets[0].browser_download_url')
-  #         echo "plugin_url=$plugin_url" >> $GITHUB_OUTPUT
-  
   # bitergia-analytics-opensearch-dashboards:
   #   name: Bitergia Analytics OpenSearch Dashboards
   #   needs:
   #     - variables-job
+  #     - setup
+  #     - semverup
   #     - bitergia-analytics-plugin
-  #   runs-on: ubuntu-latest
-  #   outputs:
-  #     version: ${{ steps.semverup.outputs.version }}
-  #     notes: ${{ steps.notes.outputs.notes }}
-  #   steps:
-  #     - name: Checkout plugin source code
-  #       uses: actions/checkout@v4
-  #       with:
-  #         repository: evamillan/test-gh-actions
-  #         path: bitergia-analytics-opensearch-dashboards
-  #         token: '${{ secrets.ACCESS_TOKEN }}'
-  #         fetch-depth: 0
-  #         fetch-tags: true
+  #   uses: ./.github/workflows/release-bap-component.yml
+  #   with:
+  #     version: ${{ needs.semverup.outputs.version }}
+  #     git_email: ${{ needs.variables-job.outputs.git_email }}
+  #     git_name: ${{ needs.variables-job.outputs.git_name }}
+  #     release_candidate: ${{ needs.variables-job.outputs.release_candidate }}
+  #     module_name: 'bitergia-analytics-opensearch-dashboards'
+  #     module_repository: 'bitergia-analytics/bitergia-analytics-opensearch-dashboards'
+  #     module_directory: 'bitergia-analytics-opensearch-dashboards'
+  #     forced_version: ${{ needs.setup.outputs.dashboards_forced_version }}
+  #     plugin_url: ${{ needs.bitergia-analytics-plugin.outputs.plugin_url }}
+  #   secrets:
+  #     access_token: ${{ secrets.ACCESS_TOKEN }}
+    
+  # bitergia-analytics-opensearch:
+  #   name: Bitergia Analytics OpenSearch
+  #   needs:
+  #     - variables-job
+  #     - setup
+  #     - semverup
+  #   uses: ./.github/workflows/release-bap-component.yml
+  #   with:
+  #     version: ${{ needs.semverup.outputs.version }}
+  #     git_email: ${{ needs.variables-job.outputs.git_email }}
+  #     git_name: ${{ needs.variables-job.outputs.git_name }}
+  #     release_candidate: ${{ needs.variables-job.outputs.release_candidate }}
+  #     module_name: 'bitergia-analytics-opensearch'
+  #     module_repository: 'bitergia-analytics/bitergia-analytics-opensearch'
+  #     module_directory: 'bitergia-analytics-opensearch'
+  #     forced_version: ${{ needs.setup.outputs.opensearch_forced_version }}
+  #   secrets:
+  #     access_token: ${{ secrets.ACCESS_TOKEN }}
 
-  #     - name: Install poetry
-  #       run: |
-  #         curl -sSL https://install.python-poetry.org | python3 -
-  #         echo "PATH=$HOME/.poetry/bin:$PATH" >> $GITHUB_ENV
-  #       shell: bash
-
-  #     - name: Install release-tools
-  #       run: pip install git+https://github.com/evamillan/release-tools.git#egg=release-tools
-
-  #     - id: old-version
-  #       name: Get old version
-  #       run: |
-  #         version=$(<version)
-  #         echo "version=$version" >> $GITHUB_OUTPUT
-  #       working-directory: bitergia-analytics-opensearch-dashboards
-
-  #     - id: semverup
-  #       name: Get version number
-  #       continue-on-error: true
-  #       shell: bash {0}
-  #       run: |
-  #         if [ ${{ inputs.release_candidate }} == 'true' ]
-  #         then
-  #           rcArg='--pre-release'
-  #         else
-  #           rcArg=''
-  #         fi
-  #         old_version=${{ steps.old-version.outputs.version }}
-
-  #         version=$(semverup --dry-run --current-version $old_version $rcArg)
-  #         if [ -z $version ] && [ ${{ inputs.release_candidate }} != 'true' ] && [[ "$old_version" =~ .*rc.* ]]
-  #         then
-  #           echo "Create final version from rc"
-  #           version=$(semverup --bump-version patch)
-  #           echo "forced_version=true" >> $GITHUB_OUTPUT
-  #         else
-  #           echo "forced_version=false" >> $GITHUB_OUTPUT
-  #         fi
-  #         echo $version
-  #         echo "version=$version" >> $GITHUB_OUTPUT
-  #         if [ -z $version ]; then exit 1; fi
-  #       working-directory: bitergia-analytics-opensearch-dashboards
-
-  #     - id: version
-  #       name: Update version
-  #       shell: bash
-  #       run: |
-  #         new_version=${{ steps.semverup.outputs.version }}
-  #         echo $new_version > version
-  #       working-directory: bitergia-analytics-opensearch-dashboards
+  perceval-public-inbox:
+    name: perceval-public-inbox
+    runs-on: ubuntu-latest
+    needs:
+      - variables-job
+      - setup
+      - semverup
+    uses: ./.github/workflows/release-grimoirelab-component.yml
+    with:
+      git_email: ${{ needs.variables-job.outputs.git_email }}
+      git_name: ${{ needs.variables-job.outputs.git_name }}
+      release_candidate: ${{ needs.variables-job.outputs.release_candidate }}
+      module_name: 'perceval-public-inbox'
+      module_repository: 'evamillan/grimoirelab-perceval-public-inbox'
+      module_directory: 'perceval-public-inbox'
+    secrets:
+      access_token: ${{ secrets.ACCESS_TOKEN }}
+  
+  bitergia-analytics:
+    name: Bitergia Analytics
+    runs-on: ubuntu-latest
+    needs:
+      - variables-job
+      - setup
+      - semverup
+      # - bitergia-analytics-plugin
+      # - bitergia-analytics-opensearch-dashboards
+      # - bitergia-analytics-opensearch
+      - perceval-public-inbox
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v4
+        with:
+          repository: evamillan/bitergia-analytics
+          token: ${{ secrets.ACCESS_TOKEN }}
+          fetch-depth: 0
+          ref: release-workflow
       
-  #     - name: Update plugin URL in Dockerfile
-  #       id: dockerfile
-  #       shell: bash
-  #       run: |
-  #         url='${{ needs.bitergia-analytics-plugin.outputs.plugin_url }}'
-  #         line="RUN opensearch-dashboards-plugin install $url"
-  #         sed -i "/bitergia-analytics-plugin/s|.*|$line|" Dockerfile
-  #       working-directory: bitergia-analytics-opensearch-dashboards
+      - name: Set up Git config
+        run: |
+          git config --global user.email "${{ inputs.git_email }}"
+          git config --global user.name "${{ inputs.git_name }}"
+
+      - name: Install release-tools
+        run: pip install git+https://github.com/evamillan/release-tools.git#egg=release-tools
       
-  #     - id: notes
-  #       name: Generate release notes.
-  #       if: steps.semverup.outcome == 'success'
-  #       run: |
-  #         version=${{ steps.semverup.outputs.version }}
-  #         eof="EOF$(date +%s)"
-  #         release_file="releases/$version.md"
-  #         if [ ${{ inputs.release_candidate }} == 'true' ]
-  #         then
-  #           newsArg=''
-  #           rcArg='--pre-release'
-  #         else
-  #           newsArg='--news'
-  #           rcArg=''
-  #         fi
-
-  #         if [ ${{ steps.semverup.outputs.forced_version }} != 'true' ]
-  #         then
-  #           notes "Bitergia Analytics OpenSearch Dashboards" $version $newsArg --authors $rcArg
-  #         else
-  #           today=$(date -u "+%Y-%m-%d")
-  #           cat << EOF > $release_file
-  #           ## Bitergia Analytics OpenSearch Dashboards $version - ($today)
-  #         EOF
-  #           # Update NEWS file if it is not a release candidate
-  #           if [ ${{ inputs.release_candidate }} != 'true' ]
-  #           then
-  #             mv NEWS old_NEWS
-  #             echo -e "# Releases\n" >> NEWS
-  #             cat $release_file >> NEWS
-  #             cat old_NEWS | tail -n +2 >> NEWS
-  #           fi
-  #         fi
-
-  #         # Save release notes in 'notes' output
-  #         echo 'notes<<$eof' >> $GITHUB_OUTPUT
-  #         cat $release_file >> $GITHUB_OUTPUT
-  #         echo '$eof' >> $GITHUB_OUTPUT
-  #       working-directory: bitergia-analytics-opensearch-dashboards
+      - id: version
+        name: Update version file
+        shell: bash
+        run: |
+          new_version=${{ needs.semverup.outputs.version }}
+          echo $new_version > version
       
-  #     - id: current_time
-  #       name: Store current time to get the release workflow
-  #       if: steps.semverup.outcome == 'success'
-  #       run: |
-  #         datetime=$(date +"%Y-%m-%dT%H:%M:%S%z")
-  #         echo "datetime=$datetime" >> $GITHUB_OUTPUT
-  #         echo $datetime
+      - name: Generate release notes
+        id: notes
+        env:
+          # plugin_notes: "${{ needs.bitergia-analytics-plugin.outputs.notes }}"
+          # opensearch_notes: "${{ needs.bitergia-analytics-opensearch.outputs.notes }}"
+          # dashboards_notes: "${{ needs.bitergia-analytics-opensearch-dashboards.outputs.notes }}"
+          perceval_public_inbox_notes: "${{ needs.perceval-public-inbox.outputs.notes }}"
+        run: |
+          version=${{ needs.semverup.outputs.version }}
+          eof="EOF$(date +%s)"
+          release_file="releases/$version.md"
+          notes=''
+          if [ ${{ inputs.release_candidate }} == 'true' ]
+          then
+            newsArg=''
+            rcArg='--pre-release'
+          else
+            rcArg=''
+          fi
 
-  #     - id: publish
-  #       name: Publish new version
-  #       if: steps.semverup.outcome == 'success'
-  #       run: |
-  #         git config user.name ${{ inputs.git_name }}
-  #         git config user.email ${{ inputs.git_email }}
-  #         git add .
-  #         git commit -m "Release ${{ steps.semverup.outputs.version }}"
-  #         git push
-  #         git tag ${{ steps.semverup.outputs.version }}
-  #         git push origin ${{ steps.semverup.outputs.version }}
-  #       working-directory: bitergia-analytics-opensearch-dashboards
+          if [ ${{ needs.setup.outputs.bitergia_analytics_forced_version }} != true ]
+          then
+            notes "Bitergia Analytics" $version $newsArg --authors $rcArg
+            echo 'notes<<$eof' >> $GITHUB_OUTPUT
+            cat $release_file | tail -n +2 >> $GITHUB_OUTPUT
+            echo '$eof' >> $GITHUB_OUTPUT
+          else
+            echo "# Bitergia Analytics ${version}" > $release_file
+          fi
+          
+          cat << $eof >> $release_file
+          The following list describes the changes by component:
+
+          $perceval_public_inbox_notes
+          $eof
+
+          cat $release_file
+
+      - name: Generate NEWS
+        if: inputs.release_candidate == false
+        env:
+          notes_bitergia_analytics: "${{ steps.notes.outputs.notes }}"
+          # notes_bitergia_analytics_plugin: "${{ needs.bitergia-analytics-plugin.outputs.notes }}"
+          # notes_bitergia_analytics_opensearch: "${{ needs.bitergia-analytics-opensearch.outputs.notes }}"
+          # notes_bitergia_analytics_opensearch_dashboards: "${{ needs.bitergia-analytics-opensearch-dashboards.outputs.notes }}"
+          notes_perceval_public_inbox: "${{ needs.perceval-public-inbox.outputs.notes }}"
+        run: |
+          version=${{ needs.semverup.outputs.version }}
+          news_file="NEWS"
+          old_news="NEWS_old"
+          new_notes="tmp_new_notes"
+          today=$(date -u "+%Y-%m-%d")
+          
+          # packages=(
+          # bitergia_analytics_opensearch
+          # bitergia_analytics_opensearch_dashboards
+          # bitergia_analytics_plugin)
+          
+          packages=(perceval_public_inbox)
+
+          mv $news_file $old_news
+          touch $news_file $new_notes
+
+          echo "# Releases" >> $news_file
+          echo "" >> $news_file
+          echo "## Bitergia Analytics $version - ($today)" >> $news_file
+          echo "$notes_bitergia_analytics" >> $news_file
+          echo "" >> $news_file
+          for package in "${packages[@]}"
+          do
+              package_name=$(echo $package | tr '_' '-')
+              package_notes_var="notes_$package"
+              package_notes="${!package_notes_var}"
+              contents="$(echo "$package_notes" | tail -n +2)"
+              if [ ! -z "$contents" ]
+              then          
+                  echo "### $package_name" >> $new_notes
+                  echo "$contents" >> $new_notes
+                  echo "" >> $new_notes
+              fi
+          done
+          
+          echo "" >> $news_file
+          echo "The following list describes the changes by component:" >> $news_file
+          echo "" >> $news_file
+          cat $new_notes >> $news_file
+          
+          cat $old_news | tail -n +2 >> $news_file
+          
+          rm $old_news $new_notes
+          git add $news_file 
+          
+          cat $news_file
       
-  #     - id: wait-for-release
-  #       name: Wait for release to finish.
-  #       continue-on-error: true
-  #       if: steps.publish.outcome == 'success'
-  #       run: |
-  #         url="https://api.github.com/repos/evamillan/test-gh-actions/actions/workflows/release.yml/runs?created=>${{ steps.current_time.outputs.datetime }}"
-  #         while true
-  #         do
-  #           workflows=$(curl -sS -H "Authorization: token ${{ secrets.ACCESS_TOKEN }}" $url)
-  #           if [ $(echo $workflows | jq '.total_count') -eq 0 ]
-  #           then
-  #             echo "Release workflow did not start"
-  #             sleep 60
-  #             continue
-  #           fi
+      - id: current_time
+        name: Store current time to get the release workflow
+        run: |
+          datetime=$(date +"%Y-%m-%dT%H:%M:%S%z")
+          echo "datetime=$datetime" >> $GITHUB_OUTPUT
+          echo $datetime
 
-  #           release_conclusion=$(echo $workflows | jq '.workflow_runs[0].conclusion')
-  #           release_status=$(echo $workflows | jq '.workflow_runs[0].status')
-  #           if [ $release_status = \"completed\" -a $release_conclusion = \"success\" ]
-  #           then
-  #             echo "Release completed!";
-  #             break;
-  #           elif [ $release_status = \"completed\" -a $release_conclusion != \"success\" ]
-  #           then
-  #             echo "Release failed!";
-  #             exit 1;
-  #           else
-  #             echo $release_conclusion $release_status
-  #             echo "Waiting for release..."
-  #             sleep 60
-  #           fi
-  #         done
+      - id: publish
+        name: Publish new version.
+        run: |
+          if [ ${{ inputs.release_candidate }} == 'true' ]
+          then
+            publish ${{ needs.semverup.outputs.version  }} "${{ inputs.git_name }} <${{ inputs.git_email }}>" --push origin --no-cleanup --add-all --remote-branch="release-workflow"
+          else
+            publish ${{ needs.semverup.outputs.version  }} "${{ inputs.git_name }} <${{ inputs.git_email }}>" --push origin --add-all --remote-branch="release-workflow"
+          fi
+      
+      - id: wait-for-release
+        name: Wait for release to finish.
+        if: steps.publish.outcome == 'success'
+        run: |
+          url="https://api.github.com/repos/evamillan/bitergia-analytics/actions/workflows/release.yml/runs?created=>${{ steps.current_time.outputs.datetime }}"
+          while true
+          do
+            workflows=$(curl -sS -H "Authorization: token ${{ secrets.ACCESS_TOKEN }}" $url)
+            if [ $(echo $workflows | jq '.total_count') -eq 0 ]
+            then
+              echo "Release workflow did not start"
+              sleep 60
+              continue
+            fi
 
-  #     - id: rollback
-  #       name: Rollback last commits and remove tag
-  #       if: steps.wait-for-release.outcome == 'failure'
-  #       run: |
-  #         git reset --hard HEAD~1
-  #         git push -f origin master
-  #         git tag -d ${{ steps.semverup.outputs.version }}
-  #         git push --delete origin ${{ steps.semverup.outputs.version }}
+            release_conclusion=$(echo $workflows | jq '.workflow_runs[0].conclusion')
+            release_status=$(echo $workflows | jq '.workflow_runs[0].status')
+            if [ $release_status = \"completed\" -a $release_conclusion = \"success\" ]
+            then
+              echo "Release completed!";
+              break;
+            elif [ $release_status = \"completed\" -a $release_conclusion != \"success\" ]
+            then
+              echo "Release failed!";
+              exit 1;
+            else
+              echo $release_conclusion $release_status
+              echo "Waiting for release..."
+              sleep 60
+            fi
+          done
 
-  #         # Force to fail
-  #         exit 1
-  #       working-directory: bitergia-analytics-opensearch-dashboards
+      - id: rollback
+        name: Rollback last commits and remove tag
+        if: steps.wait-for-release.outcome == 'failure'
+        run: |
+          git reset --hard HEAD~1
+          git push -f origin release-workflow
+          git tag -d ${{ needs.semverup.outputs.version }}
+          git push --delete origin ${{ needs.semverup.outputs.version }}
+
+          # Force to fail
+          exit 1
