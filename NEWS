@@ -1,5 +1,37 @@
 # Releases
 
+## Bitergia Analytics 0.18.2 - (2023-10-17)
+
+
+
+The following list describes the changes by component:
+
+### bitergia-analytics-opensearch
+
+**Dependencies updateds:**
+
+ * Dependency change\
+   Changed dependency
+
+### bitergia-analytics-opensearch-dashboards
+  
+  * Update version
+
+### bitergia-analytics-plugin
+
+**Bug fixes:**
+
+ * Test change in plugin\
+   Change description
+
+### sortinghat-openinfra
+
+**New features:**
+
+ * Test changelog\
+   Description of change
+
+
 ## Bitergia Analytics 0.20.0 - (2023-10-17)
 
 **New features:**
