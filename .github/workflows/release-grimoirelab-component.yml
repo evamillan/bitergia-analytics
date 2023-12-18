@@ -64,6 +64,7 @@ jobs:
           repository: ${{ inputs.module_repository }}
           path: ${{ inputs.module_directory }}
           token: '${{ secrets.access_token }}'
+          ref: 'test-release'
 
       - name: Set up Python 3.8
         uses: actions/setup-python@13ae5bb136fac2878aff31522b9efb785519f984 # v4.3.0

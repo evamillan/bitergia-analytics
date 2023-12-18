@@ -35,10 +35,6 @@ on:
         description: 'Force version when there are no changes.'
         type: string
         required: true
-      plugin_url:
-        description: 'Installable URL for Bitergia Analytics plugin.'
-        type: string
-        required: false
     secrets:
       access_token:
         description: 'Token for updating repositories'
@@ -48,9 +44,6 @@ on:
       notes:
         description: "Notes content for the package"
         value: ${{ jobs.release.outputs.notes }}
-      plugin_url:
-        description: "Installable URL for BAP plugin"
-        value: ${{ jobs.release.outputs.plugin_url }}
 
 jobs:
   release:
@@ -58,7 +51,6 @@ jobs:
     environment: bap-release
     outputs:
       notes: ${{ steps.notes.outputs.notes }}
-      plugin_url: ${{ steps.assets.outputs.plugin_url }}
     
     steps:
       - name: Checkout source code
@@ -68,6 +60,7 @@ jobs:
           path: ${{ inputs.module_directory }}
           token: '${{ secrets.access_token }}'
           fetch-depth: 0
+          ref: 'test-release'
       
       - name: Set up Git config
         run: |
@@ -97,14 +90,40 @@ jobs:
           echo $new_version > version
         working-directory: ${{ inputs.module_directory }}
 
-      - name: Update plugin URL in Dockerfile
+      - name: Update plugin URLs in Dockerfile
         if: ${{ inputs.module_directory == 'bitergia-analytics-opensearch-dashboards' }}
         id: dockerfile
         shell: bash
         run: |
-          url='${{ inputs.plugin_url }}'
-          line="RUN opensearch-dashboards-plugin install $url"
+          url="https://api.github.com/repos/evamillan/bitergia-analytics-plugin/releases/tags/${{ inputs.version }}"
+          assets=$(curl -sS -H "Authorization: token ${{ secrets.access_token }}" $url)
+          plugin_url=$(echo $assets | jq '.assets[0].browser_download_url')
+          line="RUN opensearch-dashboards-plugin install $plugin_url"
           sed -i "/bitergia-analytics-plugin/s|.*|$line|" Dockerfile
+
+          url="https://api.github.com/repos/evamillan/radar-vis-plugin/releases/tags/${{ inputs.version }}"
+          assets=$(curl -sS -H "Authorization: token ${{ secrets.access_token }}" $url)
+          plugin_url=$(echo $assets | jq '.assets[0].browser_download_url')
+          line="RUN opensearch-dashboards-plugin install $plugin_url && \"
+          sed -i "/radar/s|.*|$line|" Dockerfile
+
+          url="https://api.github.com/repos/evamillan/network-vis-plugin/releases/tags/${{ inputs.version }}"
+          assets=$(curl -sS -H "Authorization: token ${{ secrets.access_token }}" $url)
+          plugin_url=$(echo $assets | jq '.assets[0].browser_download_url')
+          line="    opensearch-dashboards-plugin install $plugin_url && \"
+          sed -i "/network/s|.*|$line|" Dockerfile
+
+          url="https://api.github.com/repos/evamillan/dotplot-vis-plugin/releases/tags/${{ inputs.version }}"
+          assets=$(curl -sS -H "Authorization: token ${{ secrets.access_token }}" $url)
+          plugin_url=$(echo $assets | jq '.assets[0].browser_download_url')
+          line="    opensearch-dashboards-plugin install $plugin_url && \"
+          sed -i "/dotplot/s|.*|$line|" Dockerfile
+
+          url="https://api.github.com/repos/evamillan/polar-vis-plugin/releases/tags/${{ inputs.version }}"
+          assets=$(curl -sS -H "Authorization: token ${{ secrets.access_token }}" $url)
+          plugin_url=$(echo $assets | jq '.assets[0].browser_download_url')
+          line="    opensearch-dashboards-plugin install $plugin_url"
+          sed -i "/polar/s|.*|$line|" Dockerfile
         working-directory: ${{ inputs.module_directory }}
       
       - id: notes
@@ -163,9 +182,9 @@ jobs:
         run: |
           if [ ${{ inputs.release_candidate }} == 'true' ]
           then
-            publish ${{ inputs.version }} "${{ inputs.git_name }} <${{ inputs.git_email }}>" --push origin --remote-branch main --no-cleanup --add-all
+            publish ${{ inputs.version }} "${{ inputs.git_name }} <${{ inputs.git_email }}>" --push origin --remote-branch test-release --no-cleanup --add-all
           else
-            publish ${{ inputs.version }} "${{ inputs.git_name }} <${{ inputs.git_email }}>" --push origin --remote-branch main --add-all
+            publish ${{ inputs.version }} "${{ inputs.git_name }} <${{ inputs.git_email }}>" --push origin --remote-branch test-release --add-all
           fi
         working-directory: ${{ inputs.module_directory }}
       
@@ -201,23 +220,12 @@ jobs:
             fi
           done
       
-      - id: assets
-        name: Get plugin installable URL
-        shell: bash
-        if: steps.wait-for-release.outcome == 'success' && ${{ inputs.module_directory == 'bitergia-analytics-plugin' }}
-        run: |
-          url="https://api.github.com/repos/bitergia-analytics/bitergia-analytics-plugin/releases/tags/${{ inputs.version }}"
-          assets=$(curl -sS -H "Authorization: token ${{ secrets.access_token }}" $url)
-          plugin_url=$(echo $assets | jq '.assets[0].browser_download_url')
-          echo "plugin_url=$plugin_url" >> $GITHUB_OUTPUT
-          echo $plugin_url
-      
       - id: rollback
         name: Rollback last commits and remove tag
         if: steps.wait-for-release.outcome == 'failure'
         run: |
           git reset --hard HEAD~1
-          git push -f origin main
+          git push -f origin test-release
           git tag -d ${{ inputs.version }}
           git push --delete origin ${{ inputs.version }}
 
