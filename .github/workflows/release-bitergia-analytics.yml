@@ -152,24 +152,24 @@ jobs:
   #         echo "new_version=$new_version" >> $GITHUB_OUTPUT
   #         echo $new_version
 
-  # bitergia-analytics-plugin:
-  #   name: Bitergia Analytics Plugin
-  #   needs:
-  #     - variables-job
-  #     - setup
-  #     - semverup
-  #   uses: ./.github/workflows/release-bap-component.yml
-  #   with:
-  #     version: ${{ needs.semverup.outputs.version }}
-  #     git_email: ${{ needs.variables-job.outputs.git_email }}
-  #     git_name: ${{ needs.variables-job.outputs.git_name }}
-  #     release_candidate: ${{ needs.variables-job.outputs.release_candidate }}
-  #     module_name: 'bitergia-analytics-plugin'
-  #     module_repository: 'evamillan/bitergia-analytics-plugin'
-  #     module_directory: 'bitergia-analytics-plugin'
-  #     forced_version: ${{ needs.setup.outputs.plugin_forced_version }}
-  #   secrets:
-  #     access_token: ${{ secrets.BAP_BUILD_TOKEN }}
+  bitergia-analytics-plugin:
+    name: Bitergia Analytics Plugin
+    needs:
+      - variables-job
+      # - setup
+      # - semverup
+    uses: ./.github/workflows/release-bap-component.yml
+    with:
+      version: "0.15.2"
+      git_email: ${{ needs.variables-job.outputs.git_email }}
+      git_name: ${{ needs.variables-job.outputs.git_name }}
+      release_candidate: ${{ needs.variables-job.outputs.release_candidate }}
+      module_name: 'bitergia-analytics-plugin'
+      module_repository: 'evamillan/bitergia-analytics-plugin'
+      module_directory: 'bitergia-analytics-plugin'
+      forced_version: true
+    secrets:
+      access_token: ${{ secrets.BAP_BUILD_TOKEN }}
     
   # bitergia-analytics-opensearch:
   #   name: Bitergia Analytics OpenSearch
@@ -190,81 +190,81 @@ jobs:
   #   secrets:
   #     access_token: ${{ secrets.BAP_BUILD_TOKEN }}
   
-  # dotplot-vis-plugin:
-  #   name: Dotplot Visualization Plugin
-  #   needs:
-  #     - variables-job
-  #     - setup
-  #     - semverup
-  #   uses: ./.github/workflows/release-bap-component.yml
-  #   with:
-  #     version: ${{ needs.semverup.outputs.version }}
-  #     git_email: ${{ needs.variables-job.outputs.git_email }}
-  #     git_name: ${{ needs.variables-job.outputs.git_name }}
-  #     release_candidate: ${{ needs.variables-job.outputs.release_candidate }}
-  #     module_name: 'dotplot-vis-plugin'
-  #     module_repository: 'evamillan/dotplot-vis-plugin'
-  #     module_directory: 'dotplot-vis-plugin'
-  #     forced_version: ${{ needs.setup.outputs.dotplot_forced_version }}
-  #   secrets:
-  #     access_token: ${{ secrets.BAP_BUILD_TOKEN }}
+  dotplot-vis-plugin:
+    name: Dotplot Visualization Plugin
+    needs:
+      - variables-job
+      # - setup
+      # - semverup
+    uses: ./.github/workflows/release-bap-component.yml
+    with:
+      version: "0.15.2"
+      git_email: ${{ needs.variables-job.outputs.git_email }}
+      git_name: ${{ needs.variables-job.outputs.git_name }}
+      release_candidate: ${{ needs.variables-job.outputs.release_candidate }}
+      module_name: 'dotplot-vis-plugin'
+      module_repository: 'evamillan/dotplot-vis-plugin'
+      module_directory: 'dotplot-vis-plugin'
+      forced_version: true
+    secrets:
+      access_token: ${{ secrets.BAP_BUILD_TOKEN }}
   
-  # network-vis-plugin:
-  #   name: Network Visualization Plugin
-  #   needs:
-  #     - variables-job
-  #     - setup
-  #     - semverup
-  #   uses: ./.github/workflows/release-bap-component.yml
-  #   with:
-  #     version: ${{ needs.semverup.outputs.version }}
-  #     git_email: ${{ needs.variables-job.outputs.git_email }}
-  #     git_name: ${{ needs.variables-job.outputs.git_name }}
-  #     release_candidate: ${{ needs.variables-job.outputs.release_candidate }}
-  #     module_name: 'network-vis-plugin'
-  #     module_repository: 'evamillan/network-vis-plugin'
-  #     module_directory: 'network-vis-plugin'
-  #     forced_version: ${{ needs.setup.outputs.network_forced_version }}
-  #   secrets:
-  #     access_token: ${{ secrets.BAP_BUILD_TOKEN }}
+  network-vis-plugin:
+    name: Network Visualization Plugin
+    needs:
+      - variables-job
+      # - setup
+      # - semverup
+    uses: ./.github/workflows/release-bap-component.yml
+    with:
+      version: "0.15.2"
+      git_email: ${{ needs.variables-job.outputs.git_email }}
+      git_name: ${{ needs.variables-job.outputs.git_name }}
+      release_candidate: ${{ needs.variables-job.outputs.release_candidate }}
+      module_name: 'network-vis-plugin'
+      module_repository: 'evamillan/network-vis-plugin'
+      module_directory: 'network-vis-plugin'
+      forced_version: true
+    secrets:
+      access_token: ${{ secrets.BAP_BUILD_TOKEN }}
   
-  # polar-vis-plugin:
-  #   name: Polar Visualization Plugin
-  #   needs:
-  #     - variables-job
-  #     - setup
-  #     - semverup
-  #   uses: ./.github/workflows/release-bap-component.yml
-  #   with:
-  #     version: ${{ needs.semverup.outputs.version }}
-  #     git_email: ${{ needs.variables-job.outputs.git_email }}
-  #     git_name: ${{ needs.variables-job.outputs.git_name }}
-  #     release_candidate: ${{ needs.variables-job.outputs.release_candidate }}
-  #     module_name: 'polar-vis-plugin'
-  #     module_repository: 'evamillan/polar-vis-plugin'
-  #     module_directory: 'polar-vis-plugin'
-  #     forced_version: ${{ needs.setup.outputs.polar_forced_version }}
-  #   secrets:
-  #     access_token: ${{ secrets.BAP_BUILD_TOKEN }}
+  polar-vis-plugin:
+    name: Polar Visualization Plugin
+    needs:
+      - variables-job
+      # - setup
+      # - semverup
+    uses: ./.github/workflows/release-bap-component.yml
+    with:
+      version: "0.15.2"
+      git_email: ${{ needs.variables-job.outputs.git_email }}
+      git_name: ${{ needs.variables-job.outputs.git_name }}
+      release_candidate: ${{ needs.variables-job.outputs.release_candidate }}
+      module_name: 'polar-vis-plugin'
+      module_repository: 'evamillan/polar-vis-plugin'
+      module_directory: 'polar-vis-plugin'
+      forced_version: true
+    secrets:
+      access_token: ${{ secrets.BAP_BUILD_TOKEN }}
   
-  # radar-vis-plugin:
-  #   name: Radar Visualization Plugin
-  #   needs:
-  #     - variables-job
-  #     - setup
-  #     - semverup
-  #   uses: ./.github/workflows/release-bap-component.yml
-  #   with:
-  #     version: ${{ needs.semverup.outputs.version }}
-  #     git_email: ${{ needs.variables-job.outputs.git_email }}
-  #     git_name: ${{ needs.variables-job.outputs.git_name }}
-  #     release_candidate: ${{ needs.variables-job.outputs.release_candidate }}
-  #     module_name: 'radar-vis-plugin'
-  #     module_repository: 'evamillan/radar-vis-plugin'
-  #     module_directory: 'radar-vis-plugin'
-  #     forced_version: ${{ needs.setup.outputs.radar_forced_version }}
-  #   secrets:
-  #     access_token: ${{ secrets.BAP_BUILD_TOKEN }}
+  radar-vis-plugin:
+    name: Radar Visualization Plugin
+    needs:
+      - variables-job
+      # - setup
+      # - semverup
+    uses: ./.github/workflows/release-bap-component.yml
+    with:
+      version: "0.15.2"
+      git_email: ${{ needs.variables-job.outputs.git_email }}
+      git_name: ${{ needs.variables-job.outputs.git_name }}
+      release_candidate: ${{ needs.variables-job.outputs.release_candidate }}
+      module_name: 'radar-vis-plugin'
+      module_repository: 'evamillan/radar-vis-plugin'
+      module_directory: 'radar-vis-plugin'
+      forced_version: true
+    secrets:
+      access_token: ${{ secrets.BAP_BUILD_TOKEN }}
   
   bitergia-analytics-opensearch-dashboards:
     name: Bitergia Analytics OpenSearch Dashboards
@@ -272,11 +272,11 @@ jobs:
       - variables-job
       # - setup
       # - semverup
-      # - bitergia-analytics-plugin
-      # - dotplot-vis-plugin
-      # - network-vis-plugin
-      # - polar-vis-plugin
-      # - radar-vis-plugin
+      - bitergia-analytics-plugin
+      - dotplot-vis-plugin
+      - network-vis-plugin
+      - polar-vis-plugin
+      - radar-vis-plugin
     uses: ./.github/workflows/release-bap-component.yml
     with:
       version: "0.15.2"
@@ -287,6 +287,11 @@ jobs:
       module_repository: 'evamillan/bitergia-analytics-opensearch-dashboards'
       module_directory: 'bitergia-analytics-opensearch-dashboards'
       forced_version: true
+      plugin_url: ${{ needs.bitergia-analytics-plugin.outputs.plugin_url }}
+      dotplot_url: ${{ needs.dotplot-vis-plugin.outputs.plugin_url }}
+      network_url: ${{ needs.network-vis-plugin.outputs.plugin_url }}
+      polar_url: ${{ needs.polar-vis-plugin.outputs.plugin_url }}
+      radar_url: ${{ needs.radar-vis-plugin.outputs.plugin_url }}
     secrets:
       access_token: ${{ secrets.BAP_BUILD_TOKEN }}
 
