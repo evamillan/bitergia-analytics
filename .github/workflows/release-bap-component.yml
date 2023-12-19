@@ -104,25 +104,25 @@ jobs:
           url="https://api.github.com/repos/evamillan/radar-vis-plugin/releases/tags/${{ inputs.version }}"
           assets=$(curl -sS -H "Authorization: token ${{ secrets.access_token }}" $url)
           plugin_url=$(echo $assets | jq '.assets[0].browser_download_url')
-          line="RUN opensearch-dashboards-plugin install $plugin_url && \"
+          line="RUN opensearch-dashboards-plugin install $plugin_url"
           sed -i "/radar/s|.*|$line|" Dockerfile
 
           url="https://api.github.com/repos/evamillan/network-vis-plugin/releases/tags/${{ inputs.version }}"
           assets=$(curl -sS -H "Authorization: token ${{ secrets.access_token }}" $url)
           plugin_url=$(echo $assets | jq '.assets[0].browser_download_url')
-          line="    opensearch-dashboards-plugin install $plugin_url && \"
+          line="RUN opensearch-dashboards-plugin install $plugin_url"
           sed -i "/network/s|.*|$line|" Dockerfile
 
           url="https://api.github.com/repos/evamillan/dotplot-vis-plugin/releases/tags/${{ inputs.version }}"
           assets=$(curl -sS -H "Authorization: token ${{ secrets.access_token }}" $url)
           plugin_url=$(echo $assets | jq '.assets[0].browser_download_url')
-          line="    opensearch-dashboards-plugin install $plugin_url && \"
+          line="RUN opensearch-dashboards-plugin install $plugin_url"
           sed -i "/dotplot/s|.*|$line|" Dockerfile
 
           url="https://api.github.com/repos/evamillan/polar-vis-plugin/releases/tags/${{ inputs.version }}"
           assets=$(curl -sS -H "Authorization: token ${{ secrets.access_token }}" $url)
           plugin_url=$(echo $assets | jq '.assets[0].browser_download_url')
-          line="    opensearch-dashboards-plugin install $plugin_url"
+          line="RUN opensearch-dashboards-plugin install $plugin_url"
           sed -i "/polar/s|.*|$line|" Dockerfile
         working-directory: ${{ inputs.module_directory }}
       
