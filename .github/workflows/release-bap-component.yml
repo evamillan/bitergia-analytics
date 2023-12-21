@@ -118,7 +118,7 @@ jobs:
         id: dockerfile
         shell: bash
         run: |
-          line="RUN opensearch-dashboards-plugin install ${{ needs.bitergia-analytics-plugin.outputs.plugin_url }}"
+          line="RUN opensearch-dashboards-plugin install ${{ inputs.plugin_url }}"
           sed -i "/bitergia-analytics-plugin/s|.*|$line|" Dockerfile
 
           line="RUN opensearch-dashboards-plugin install ${{ inputs.radar_url }}"
@@ -199,10 +199,11 @@ jobs:
       #     fi
       #   working-directory: ${{ inputs.module_directory }}
       
-      # - id: wait-for-release
-      #   name: Wait for release to finish.
-      #   continue-on-error: true
-      #   run: |
+      - id: wait-for-release
+        name: Wait for release to finish.
+        continue-on-error: true
+        run: |
+          echo 'ok'
       #     url="https://api.github.com/repos/${{ inputs.module_repository }}/actions/workflows/release.yml/runs?created=>${{ steps.current_time.outputs.datetime }}"
       #     while true
       #     do
@@ -234,7 +235,7 @@ jobs:
       - id: assets
         name: Get plugin URL
         shell: bash
-        if: ${{ contains(inputs.module_directory, 'plugin') }}
+        if: ${{ steps.wait-for-release.outcome == 'success' && contains(inputs.module_directory, 'plugin') }}
         run: |
           osd_version=$(jq -r '.opensearchDashboardsVersion' opensearch_dashboards.json)
           plugin_url="https://github.com/${{ inputs.module_repository}}/releases/download/${{ inputs.version }}/${{ inputs.module_name }}-${{ inputs.version }}_${osd_version}.zip"

@@ -171,24 +171,24 @@ jobs:
     secrets:
       access_token: ${{ secrets.BAP_BUILD_TOKEN }}
     
-  # bitergia-analytics-opensearch:
-  #   name: Bitergia Analytics OpenSearch
-  #   needs:
-  #     - variables-job
-  #     - setup
-  #     - semverup
-  #   uses: ./.github/workflows/release-bap-component.yml
-  #   with:
-  #     version: ${{ needs.semverup.outputs.version }}
-  #     git_email: ${{ needs.variables-job.outputs.git_email }}
-  #     git_name: ${{ needs.variables-job.outputs.git_name }}
-  #     release_candidate: ${{ needs.variables-job.outputs.release_candidate }}
-  #     module_name: 'bitergia-analytics-opensearch'
-  #     module_repository: 'evamillan/bitergia-analytics-opensearch'
-  #     module_directory: 'bitergia-analytics-opensearch'
-  #     forced_version: ${{ needs.setup.outputs.opensearch_forced_version }}
-  #   secrets:
-  #     access_token: ${{ secrets.BAP_BUILD_TOKEN }}
+  bitergia-analytics-opensearch:
+    name: Bitergia Analytics OpenSearch
+    needs:
+      - variables-job
+      # - setup
+      # - semverup
+    uses: ./.github/workflows/release-bap-component.yml
+    with:
+      version: "0.15.2"
+      git_email: ${{ needs.variables-job.outputs.git_email }}
+      git_name: ${{ needs.variables-job.outputs.git_name }}
+      release_candidate: ${{ needs.variables-job.outputs.release_candidate }}
+      module_name: 'bitergia-analytics-opensearch'
+      module_repository: 'evamillan/bitergia-analytics-opensearch'
+      module_directory: 'bitergia-analytics-opensearch'
+      forced_version: true
+    secrets:
+      access_token: ${{ secrets.BAP_BUILD_TOKEN }}
   
   dotplot-vis-plugin:
     name: Dotplot Visualization Plugin
