@@ -160,7 +160,7 @@ jobs:
       # - semverup
     uses: ./.github/workflows/release-bap-component.yml
     with:
-      version: "0.15.2"
+      version: "0.14.1-rc.1"
       git_email: ${{ needs.variables-job.outputs.git_email }}
       git_name: ${{ needs.variables-job.outputs.git_name }}
       release_candidate: ${{ needs.variables-job.outputs.release_candidate }}
@@ -179,7 +179,7 @@ jobs:
       # - semverup
     uses: ./.github/workflows/release-bap-component.yml
     with:
-      version: "0.15.2"
+      version: "0.14.1-rc.1"
       git_email: ${{ needs.variables-job.outputs.git_email }}
       git_name: ${{ needs.variables-job.outputs.git_name }}
       release_candidate: ${{ needs.variables-job.outputs.release_candidate }}
@@ -198,12 +198,12 @@ jobs:
       # - semverup
     uses: ./.github/workflows/release-bap-component.yml
     with:
-      version: "0.15.2"
+      version: "0.14.1-rc.1"
       git_email: ${{ needs.variables-job.outputs.git_email }}
       git_name: ${{ needs.variables-job.outputs.git_name }}
       release_candidate: ${{ needs.variables-job.outputs.release_candidate }}
       module_name: 'dotplot-vis-plugin'
-      module_repository: 'evamillan/dotplot-vis-plugin'
+      module_repository: 'bitergia-analytics/dotplot-vis-plugin'
       module_directory: 'dotplot-vis-plugin'
       forced_version: true
     secrets:
@@ -217,12 +217,12 @@ jobs:
       # - semverup
     uses: ./.github/workflows/release-bap-component.yml
     with:
-      version: "0.15.2"
+      version: "0.14.1-rc.1"
       git_email: ${{ needs.variables-job.outputs.git_email }}
       git_name: ${{ needs.variables-job.outputs.git_name }}
       release_candidate: ${{ needs.variables-job.outputs.release_candidate }}
       module_name: 'network-vis-plugin'
-      module_repository: 'evamillan/network-vis-plugin'
+      module_repository: 'bitergia-analytics/network-vis-plugin'
       module_directory: 'network-vis-plugin'
       forced_version: true
     secrets:
@@ -236,7 +236,7 @@ jobs:
       # - semverup
     uses: ./.github/workflows/release-bap-component.yml
     with:
-      version: "0.15.2"
+      version: "0.14.1-rc.1"
       git_email: ${{ needs.variables-job.outputs.git_email }}
       git_name: ${{ needs.variables-job.outputs.git_name }}
       release_candidate: ${{ needs.variables-job.outputs.release_candidate }}
@@ -255,7 +255,7 @@ jobs:
       # - semverup
     uses: ./.github/workflows/release-bap-component.yml
     with:
-      version: "0.15.2"
+      version: "0.14.1-rc.1"
       git_email: ${{ needs.variables-job.outputs.git_email }}
       git_name: ${{ needs.variables-job.outputs.git_name }}
       release_candidate: ${{ needs.variables-job.outputs.release_candidate }}
@@ -279,7 +279,7 @@ jobs:
       - radar-vis-plugin
     uses: ./.github/workflows/release-bap-component.yml
     with:
-      version: "0.15.2"
+      version: "0.14.1-rc.1"
       git_email: ${{ needs.variables-job.outputs.git_email }}
       git_name: ${{ needs.variables-job.outputs.git_name }}
       release_candidate: ${{ needs.variables-job.outputs.release_candidate }}
